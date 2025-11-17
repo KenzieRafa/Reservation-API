@@ -76,7 +76,7 @@ TST TUBES MILESTONE 4 - Copy/
 
 ### Step 1: Clone/Navigate to Project
 ```bash
-cd "c:\Users\Asus\Desktop\B Kenzie\ITB JR\SEMESTER 5\TST\TST TUBES MILESTONE 4 - Copy"
+cd "c:\Users\Asus\Desktop\B Kenzie\ITB JR\SEMESTER 5\TST\TST TUBES MILESTONE 4"
 ```
 
 ### Step 2: Verify Python Installation
