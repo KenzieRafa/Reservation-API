@@ -171,6 +171,35 @@
               ]
             }
           }
+        },
+        {
+          "name": "Unblock Rooms",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"room_type_id\": \"DELUXE_001\",\n  \"start_date\": \"2025-11-20\",\n  \"end_date\": \"2025-11-22\",\n  \"count\": 1\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8000/api/availability/unblock",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "availability",
+                "unblock"
+              ]
+            }
+          }
         }
       ]
     },
@@ -179,6 +208,21 @@
       "item": [
         {
           "name": "Create Reservation",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('reservation_id', jsonData.reservation_id);",
+                  "    pm.collectionVariables.set('confirmation_code', jsonData.confirmation_code);",
+                  "    console.log('✓ Variables saved: reservation_id and confirmation_code');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -478,6 +522,20 @@
       "item": [
         {
           "name": "Add to Waitlist",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('waitlist_id', jsonData.waitlist_id);",
+                  "    console.log('✓ Variable saved: waitlist_id');",
+                  "}"
+                ]
+              }
+            }
+          ],
           "request": {
             "method": "POST",
             "header": [
@@ -691,6 +749,46 @@
               ]
             }
           }
+        },
+        {
+          "name": "Expire Entry",
+          "request": {
+            "method": "POST",
+            "url": {
+              "raw": "http://localhost:8000/api/waitlist/{{waitlist_id}}/expire",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "waitlist",
+                "{{waitlist_id}}",
+                "expire"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Entries to Notify",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8000/api/waitlist/notify/pending",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "waitlist",
+                "notify",
+                "pending"
+              ]
+            }
+          }
         }
       ]
     }
@@ -698,15 +796,18 @@
   "variable": [
     {
       "key": "reservation_id",
-      "value": ""
+      "value": "",
+      "type": "string"
     },
     {
       "key": "waitlist_id",
-      "value": ""
+      "value": "",
+      "type": "string"
     },
     {
       "key": "confirmation_code",
-      "value": ""
+      "value": "",
+      "type": "string"
     }
   ]
 }
