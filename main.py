@@ -20,7 +20,7 @@ from application.services import ReservationService, AvailabilityService, Waitli
 from infrastructure.repositories.in_memory_repositories import (
     InMemoryReservationRepository, InMemoryAvailabilityRepository, InMemoryWaitlistRepository
 )
-from domain.enums import BookingSource, Priority
+from domain.enums import BookingSource, Priority, ReservationStatus, RequestType, WaitlistStatus
 from domain.value_objects import DateRange, GuestCount
 
 app = FastAPI(
@@ -45,6 +45,55 @@ def get_waitlist_service() -> WaitlistService:
     return WaitlistService(waitlist_repo)
 
 # ============================================================================
+# HEALTH & ENUM REFERENCE ENDPOINTS
+# ============================================================================
+
+@app.get("/api/health", tags=["Health"])
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "healthy", "message": "API is running"}
+
+@app.get("/api/enums/reservation-status", tags=["Enum Reference"])
+async def get_reservation_statuses():
+    """Get all ReservationStatus enum values"""
+    return {
+        "values": [f"{item.name}" for item in ReservationStatus],
+        "description": "Reservation status values: PENDING, CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED, NO_SHOW"
+    }
+
+@app.get("/api/enums/booking-source", tags=["Enum Reference"])
+async def get_booking_sources():
+    """Get all BookingSource enum values"""
+    return {
+        "values": [f"{item.name}" for item in BookingSource],
+        "description": "Booking source values: WEBSITE, MOBILE_APP, PHONE, OTA, DIRECT, CORPORATE"
+    }
+
+@app.get("/api/enums/request-type", tags=["Enum Reference"])
+async def get_request_types():
+    """Get all RequestType enum values"""
+    return {
+        "values": [f"{item.name}" for item in RequestType],
+        "description": "Request type values: EARLY_CHECK_IN, LATE_CHECK_OUT, HIGH_FLOOR, ACCESSIBLE_ROOM, QUIET_ROOM, CRIBS, EXTRA_BED, SPECIAL_AMENITIES"
+    }
+
+@app.get("/api/enums/waitlist-status", tags=["Enum Reference"])
+async def get_waitlist_statuses():
+    """Get all WaitlistStatus enum values"""
+    return {
+        "values": [f"{item.name}" for item in WaitlistStatus],
+        "description": "Waitlist status values: ACTIVE, CONVERTED, EXPIRED, CANCELLED"
+    }
+
+@app.get("/api/enums/priority", tags=["Enum Reference"])
+async def get_priorities():
+    """Get all Priority enum values"""
+    return {
+        "values": {item.name: item.value for item in Priority},
+        "description": "Priority values: LOW=1, MEDIUM=2, HIGH=3, URGENT=4"
+    }
+
+# ============================================================================
 # RESERVATION ENDPOINTS
 # ============================================================================
 
@@ -55,8 +104,8 @@ async def create_reservation(
 ):
     """Create new reservation"""
     try:
-        booking_source = BookingSource(request.booking_source)
-        special_requests = [req.dict() for req in request.special_requests]
+        # booking_source is already BookingSource enum from Pydantic validation
+        special_requests = [{"type": req.type.value, "description": req.description} for req in request.special_requests]
 
         reservation = await service.create_reservation(
             guest_id=request.guest_id,
@@ -65,7 +114,7 @@ async def create_reservation(
             check_out=request.check_out,
             adults=request.adults,
             children=request.children,
-            booking_source=booking_source,
+            booking_source=request.booking_source,
             special_requests=special_requests,
             created_by=request.created_by
         )

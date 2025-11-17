@@ -1,1 +1,1 @@
-# Application layer
+"""Application Layer - Use cases and orchestration"""

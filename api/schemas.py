@@ -1,54 +1,78 @@
+"""API Schemas - Request and Response DTOs"""
 from pydantic import BaseModel, Field
 from datetime import date, datetime
 from decimal import Decimal
 from uuid import UUID
 from typing import List, Optional
 
-# Reservation Schemas
+from domain.enums import BookingSource, RequestType, Priority, ReservationStatus, WaitlistStatus
+
+
+# ============================================================================
+# RESERVATION SCHEMAS
+# ============================================================================
+
 class SpecialRequestRequest(BaseModel):
-    type: str
+    """Special request request DTO"""
+    type: RequestType
     description: str
 
+
 class CreateReservationRequest(BaseModel):
+    """Create reservation request DTO"""
     guest_id: UUID
     room_type_id: str
     check_in: date
     check_out: date
     adults: int = Field(ge=1, le=10)
     children: int = Field(ge=0, le=10, default=0)
-    booking_source: str
+    booking_source: BookingSource = BookingSource.WEBSITE
     special_requests: List[SpecialRequestRequest] = []
     created_by: str = "SYSTEM"
 
+
 class ModifyReservationRequest(BaseModel):
+    """Modify reservation request DTO"""
     check_in: Optional[date] = None
     check_out: Optional[date] = None
     adults: Optional[int] = Field(None, ge=1, le=10)
     children: Optional[int] = Field(None, ge=0, le=10)
     room_type_id: Optional[str] = None
 
+
 class AddSpecialRequestRequest(BaseModel):
-    request_type: str
+    """Add special request request DTO"""
+    request_type: RequestType
     description: str
 
+
 class ConfirmReservationRequest(BaseModel):
+    """Confirm reservation request DTO"""
     payment_confirmed: bool = True
 
+
 class CheckInRequest(BaseModel):
+    """Check-in request DTO"""
     room_number: str
 
+
 class CancelReservationRequest(BaseModel):
-    reason: str = "Requested by guest"
+    """Cancel reservation request DTO"""
+    reason: str = "Guest changed plans"
+
 
 class SpecialRequestResponse(BaseModel):
+    """Special request response DTO"""
     request_id: UUID
     request_type: str
     description: str
-    fulfilled: bool
-    notes: Optional[str]
+    fulfilled: bool = False
+    notes: Optional[str] = None
     created_at: datetime
 
+
 class ReservationResponse(BaseModel):
+    """Reservation response DTO"""
     reservation_id: UUID
     confirmation_code: str
     guest_id: UUID
@@ -67,18 +91,52 @@ class ReservationResponse(BaseModel):
     created_by: str
     version: int
 
+
 class MoneyResponse(BaseModel):
+    """Money response DTO"""
     amount: Decimal
     currency: str
 
-# Availability Schemas
+
+# ============================================================================
+# AVAILABILITY SCHEMAS
+# ============================================================================
+
 class CreateAvailabilityRequest(BaseModel):
+    """Create availability request DTO"""
     room_type_id: str
     availability_date: date
     total_rooms: int = Field(ge=1)
     overbooking_threshold: int = Field(ge=0, default=0)
 
+
+class CheckAvailabilityRequest(BaseModel):
+    """Check availability request DTO"""
+    room_type_id: str
+    start_date: date
+    end_date: date
+    required_count: int = Field(ge=1, default=1)
+
+
+class ReserveRoomsRequest(BaseModel):
+    """Reserve rooms request DTO"""
+    room_type_id: str
+    start_date: date
+    end_date: date
+    count: int = Field(ge=1)
+
+
+class BlockRoomsRequest(BaseModel):
+    """Block rooms request DTO"""
+    room_type_id: str
+    start_date: date
+    end_date: date
+    count: int = Field(ge=1)
+    reason: str
+
+
 class AvailabilityResponse(BaseModel):
+    """Availability response DTO"""
     room_type_id: str
     availability_date: date
     total_rooms: int
@@ -89,36 +147,39 @@ class AvailabilityResponse(BaseModel):
     last_updated: datetime
     version: int
 
-class CheckAvailabilityRequest(BaseModel):
-    room_type_id: str
-    start_date: date
-    end_date: date
-    required_count: int = Field(ge=1)
 
-class ReserveRoomsRequest(BaseModel):
-    room_type_id: str
-    start_date: date
-    end_date: date
-    count: int = Field(ge=1)
+# ============================================================================
+# WAITLIST SCHEMAS
+# ============================================================================
 
-class BlockRoomsRequest(BaseModel):
-    room_type_id: str
-    start_date: date
-    end_date: date
-    count: int = Field(ge=1)
-    reason: str
-
-# Waitlist Schemas
 class CreateWaitlistRequest(BaseModel):
+    """Create waitlist entry request DTO"""
     guest_id: UUID
     room_type_id: str
     check_in: date
     check_out: date
     adults: int = Field(ge=1, le=10)
     children: int = Field(ge=0, le=10, default=0)
-    priority: str
+    priority: str = "2"  # MEDIUM - as string for API, will convert to Priority enum in service
+
+
+class ConvertWaitlistRequest(BaseModel):
+    """Convert waitlist to reservation request DTO"""
+    reservation_id: UUID
+
+
+class ExtendWaitlistRequest(BaseModel):
+    """Extend waitlist expiry request DTO"""
+    additional_days: int = Field(ge=1)
+
+
+class UpgradePriorityRequest(BaseModel):
+    """Upgrade priority request DTO"""
+    new_priority: str  # As string for API flexibility
+
 
 class WaitlistResponse(BaseModel):
+    """Waitlist response DTO"""
     waitlist_id: UUID
     guest_id: UUID
     room_type_id: str
@@ -130,15 +191,6 @@ class WaitlistResponse(BaseModel):
     status: str
     created_at: datetime
     expires_at: datetime
-    notified_at: Optional[datetime]
-    converted_reservation_id: Optional[UUID]
+    notified_at: Optional[datetime] = None
+    converted_reservation_id: Optional[UUID] = None
     priority_score: int
-
-class ConvertWaitlistRequest(BaseModel):
-    reservation_id: UUID
-
-class ExtendWaitlistRequest(BaseModel):
-    additional_days: int = Field(ge=1)
-
-class UpgradePriorityRequest(BaseModel):
-    new_priority: str

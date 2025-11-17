@@ -1,4 +1,6 @@
+"""Domain Enums"""
 from enum import Enum
+
 
 class ReservationStatus(str, Enum):
     PENDING = "PENDING"
@@ -8,30 +10,36 @@ class ReservationStatus(str, Enum):
     CANCELLED = "CANCELLED"
     NO_SHOW = "NO_SHOW"
 
+
 class BookingSource(str, Enum):
-    ONLINE = "ONLINE"
+    WEBSITE = "WEBSITE"
+    MOBILE_APP = "MOBILE_APP"
     PHONE = "PHONE"
-    WALK_IN = "WALK_IN"
-    PARTNER = "PARTNER"
+    OTA = "OTA"
+    DIRECT = "DIRECT"
+    CORPORATE = "CORPORATE"
+
 
 class RequestType(str, Enum):
-    EARLY_CHECKIN = "EARLY_CHECKIN"
-    LATE_CHECKOUT = "LATE_CHECKOUT"
+    EARLY_CHECK_IN = "EARLY_CHECK_IN"
+    LATE_CHECK_OUT = "LATE_CHECK_OUT"
     HIGH_FLOOR = "HIGH_FLOOR"
-    LOW_FLOOR = "LOW_FLOOR"
-    SMOKING = "SMOKING"
-    NON_SMOKING = "NON_SMOKING"
+    ACCESSIBLE_ROOM = "ACCESSIBLE_ROOM"
+    QUIET_ROOM = "QUIET_ROOM"
+    CRIBS = "CRIBS"
+    EXTRA_BED = "EXTRA_BED"
     SPECIAL_AMENITIES = "SPECIAL_AMENITIES"
-    OTHER = "OTHER"
 
-class Priority(int, Enum):
-    LOW = 1
-    MEDIUM = 2
-    HIGH = 3
-    URGENT = 4
 
 class WaitlistStatus(str, Enum):
     ACTIVE = "ACTIVE"
     CONVERTED = "CONVERTED"
     EXPIRED = "EXPIRED"
     CANCELLED = "CANCELLED"
+
+
+class Priority(int, Enum):
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+    URGENT = 4

@@ -1,10 +1,14 @@
+"""Domain Value Objects"""
 from pydantic import BaseModel, Field, validator
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from decimal import Decimal
-from uuid import UUID
-from domain.enums import ReservationStatus, BookingSource, RequestType
+from uuid import UUID, uuid4
+from typing import Optional
+from domain.enums import RequestType
+
 
 class DateRange(BaseModel):
+    """Value Object for date ranges"""
     check_in: date
     check_out: date
 
@@ -14,12 +18,6 @@ class DateRange(BaseModel):
             raise ValueError('Check-out must be after check-in')
         return v
 
-    @validator('check_in')
-    def check_in_not_past(cls, v):
-        if v < date.today():
-            raise ValueError('Check-in date cannot be in the past')
-        return v
-
     def nights(self) -> int:
         """Calculate number of nights"""
         return (self.check_out - self.check_in).days
@@ -27,40 +25,52 @@ class DateRange(BaseModel):
     class Config:
         frozen = True
 
+
 class Money(BaseModel):
-    amount: Decimal = Field(ge=0)
+    """Value Object for monetary amounts"""
+    amount: Decimal = Field(gt=0)
     currency: str = "IDR"
 
     class Config:
         frozen = True
 
+
 class GuestCount(BaseModel):
+    """Value Object for guest count"""
     adults: int = Field(ge=1, le=10)
     children: int = Field(ge=0, le=10)
-
-    @property
-    def total_guests(self) -> int:
-        """Get total number of guests"""
-        return self.adults + self.children
 
     class Config:
         frozen = True
 
+
 class CancellationPolicy(BaseModel):
+    """Value Object for cancellation policy"""
     policy_name: str
     refund_percentage: Decimal = Field(ge=0, le=100)
     deadline_hours: int = Field(ge=0)
 
-    def calculate_refund(self, total_amount: Money, cancellation_date: date, check_in_date: date) -> Money:
-        """Calculate refund amount based on policy"""
-        hours_until_checkin = (check_in_date - cancellation_date).days * 24
-
-        if hours_until_checkin >= self.deadline_hours:
-            refund_amount = total_amount.amount * (self.refund_percentage / 100)
-        else:
-            refund_amount = Decimal(0)
-
-        return Money(amount=refund_amount, currency=total_amount.currency)
-
     class Config:
         frozen = True
+
+
+class SpecialRequest(BaseModel):
+    """Child Entity for special requests"""
+    request_id: UUID = Field(default_factory=uuid4)
+    request_type: RequestType
+    description: str
+    fulfilled: bool = False
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    def fulfill(self, notes: str) -> None:
+        """Mark request as fulfilled"""
+        self.fulfilled = True
+        self.notes = notes
+
+    def is_fulfilled(self) -> bool:
+        """Check if request is fulfilled"""
+        return self.fulfilled
+
+    class Config:
+        from_attributes = True

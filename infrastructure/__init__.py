@@ -1,1 +1,1 @@
-# Infrastructure layer
+"""Infrastructure Layer - Data persistence implementations"""
