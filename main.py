@@ -386,16 +386,13 @@ async def add_to_waitlist(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-@app.get("/api/waitlist/{waitlist_id}", response_model=WaitlistResponse, tags=["Waitlist"])
-async def get_waitlist_entry(
-    waitlist_id: UUID,
+@app.get("/api/waitlist/active", response_model=List[WaitlistResponse], tags=["Waitlist"])
+async def get_active_waitlist(
     service: WaitlistService = Depends(get_waitlist_service)
 ):
-    """Get waitlist entry by ID"""
-    entry = await service.get_waitlist_entry(waitlist_id)
-    if not entry:
-        raise HTTPException(status_code=404, detail="Waitlist entry not found")
-    return _waitlist_to_response(entry)
+    """Get all active waitlist entries"""
+    entries = await service.get_active_waitlist()
+    return [_waitlist_to_response(e) for e in entries]
 
 @app.get("/api/waitlist/guest/{guest_id}", response_model=List[WaitlistResponse], tags=["Waitlist"])
 async def get_guest_waitlist(
@@ -415,13 +412,16 @@ async def get_room_waitlist(
     entries = await service.get_room_waitlist(room_type_id)
     return [_waitlist_to_response(e) for e in entries]
 
-@app.get("/api/waitlist/active", response_model=List[WaitlistResponse], tags=["Waitlist"])
-async def get_active_waitlist(
+@app.get("/api/waitlist/{waitlist_id}", response_model=WaitlistResponse, tags=["Waitlist"])
+async def get_waitlist_entry(
+    waitlist_id: UUID,
     service: WaitlistService = Depends(get_waitlist_service)
 ):
-    """Get all active waitlist entries"""
-    entries = await service.get_active_waitlist()
-    return [_waitlist_to_response(e) for e in entries]
+    """Get waitlist entry by ID"""
+    entry = await service.get_waitlist_entry(waitlist_id)
+    if not entry:
+        raise HTTPException(status_code=404, detail="Waitlist entry not found")
+    return _waitlist_to_response(entry)
 
 @app.post("/api/waitlist/{waitlist_id}/convert", response_model=WaitlistResponse, tags=["Waitlist"])
 async def convert_waitlist_to_reservation(
