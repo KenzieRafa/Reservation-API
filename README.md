@@ -40,7 +40,7 @@ Sistem reservasi hotel dengan 3 Aggregates utama:
 ## 📁 Project Structure
 
 ```
-TST TUBES MILESTONE 4 - Copy/
+TST TUBES MILESTONE 4/
 ├── main.py                          # FastAPI application entry point
 ├── Reservation.py                   # Legacy monolithic file (reference)
 ├── requirements.txt                 # Python dependencies
@@ -313,7 +313,7 @@ python main.py --port 8001
 ### Error: Module not found (domain, api, etc)
 ```bash
 # Make sure you're in correct directory:
-cd "c:\Users\Asus\Desktop\B Kenzie\ITB JR\SEMESTER 5\TST\TST TUBES MILESTONE 4 - Copy"
+cd "c:\Users\Asus\Desktop\B Kenzie\ITB JR\SEMESTER 5\TST\TST TUBES MILESTONE 4"
 
 # Reinstall dependencies:
 pip install -r requirements.txt
