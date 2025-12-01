@@ -43,6 +43,22 @@ def print_request(method, endpoint, data=None):
     if data:
         print(f"Request Body:\n{json.dumps(data, indent=2, default=str)}")
 
+def get_auth_token():
+    print_info("Logging in to get access token...")
+    response = requests.post(
+        f"{BASE_URL}/token",
+        data={"username": "admin", "password": "admin123"}
+    )
+    if response.status_code == 200:
+        token = response.json()["access_token"]
+        print_success("Login successful")
+        return {"Authorization": f"Bearer {token}"}
+    else:
+        print_error("Login failed")
+        return {}
+
+HEADERS = {}
+
 def print_response(response):
     try:
         data = response.json()
@@ -52,6 +68,7 @@ def print_response(response):
     except:
         print(f"\nResponse ({response.status_code}): {response.text}")
         return None
+
 
 # ============================================================================
 # TEST 1: AVAILABILITY AGGREGATE
@@ -76,7 +93,7 @@ def test_availability():
         }
 
         print_request("POST", "/api/availability", payload)
-        response = requests.post(f"{BASE_URL}/api/availability", json=payload)
+        response = requests.post(f"{BASE_URL}/api/availability", json=payload, headers=HEADERS)
         data = print_response(response)
 
         if response.status_code == 201:
@@ -88,7 +105,7 @@ def test_availability():
 
     # Get availability
     print_info("Getting availability...")
-    response = requests.get(f"{BASE_URL}/api/availability/{ROOM_TYPE}/{availability_ids[0]}")
+    response = requests.get(f"{BASE_URL}/api/availability/{ROOM_TYPE}/{availability_ids[0]}", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success("Availability retrieved successfully")
@@ -102,7 +119,7 @@ def test_availability():
         "required_count": 2
     }
     print_request("POST", "/api/availability/check", payload)
-    response = requests.post(f"{BASE_URL}/api/availability/check", json=payload)
+    response = requests.post(f"{BASE_URL}/api/availability/check", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200 and data.get("available"):
         print_success("Rooms are available for date range")
@@ -128,7 +145,7 @@ def test_reservation(availability_ids):
         "check_out": check_out,
         "adults": 2,
         "children": 1,
-        "booking_source": "ONLINE",
+        "reservation_source": "ONLINE",
         "special_requests": [
             {
                 "type": "EARLY_CHECKIN",
@@ -143,7 +160,7 @@ def test_reservation(availability_ids):
     }
 
     print_request("POST", "/api/reservations", payload)
-    response = requests.post(f"{BASE_URL}/api/reservations", json=payload)
+    response = requests.post(f"{BASE_URL}/api/reservations", json=payload, headers=HEADERS)
     data = print_response(response)
 
     if response.status_code != 201:
@@ -157,7 +174,7 @@ def test_reservation(availability_ids):
 
     # 2.2 Get Reservation
     print_info("Getting reservation details...")
-    response = requests.get(f"{BASE_URL}/api/reservations/{reservation_id}")
+    response = requests.get(f"{BASE_URL}/api/reservations/{reservation_id}", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Status: {data['status']}")
@@ -169,7 +186,7 @@ def test_reservation(availability_ids):
         "description": "Please provide extra pillows and blankets"
     }
     print_request("POST", f"/api/reservations/{reservation_id}/special-requests", payload)
-    response = requests.post(f"{BASE_URL}/api/reservations/{reservation_id}/special-requests", json=payload)
+    response = requests.post(f"{BASE_URL}/api/reservations/{reservation_id}/special-requests", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Special request added. Total requests: {len(data['special_requests'])}")
@@ -178,7 +195,7 @@ def test_reservation(availability_ids):
     print_info("Confirming reservation...")
     payload = {"payment_confirmed": True}
     print_request("POST", f"/api/reservations/{reservation_id}/confirm", payload)
-    response = requests.post(f"{BASE_URL}/api/reservations/{reservation_id}/confirm", json=payload)
+    response = requests.post(f"{BASE_URL}/api/reservations/{reservation_id}/confirm", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Reservation confirmed. Status: {data['status']}")
@@ -190,14 +207,14 @@ def test_reservation(availability_ids):
         "check_out": extended_checkout
     }
     print_request("PUT", f"/api/reservations/{reservation_id}", payload)
-    response = requests.put(f"{BASE_URL}/api/reservations/{reservation_id}", json=payload)
+    response = requests.put(f"{BASE_URL}/api/reservations/{reservation_id}", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Reservation modified. New checkout: {data['check_out']}")
 
     # 2.6 Get by Confirmation Code
     print_info("Getting reservation by confirmation code...")
-    response = requests.get(f"{BASE_URL}/api/reservations/code/{confirmation_code}")
+    response = requests.get(f"{BASE_URL}/api/reservations/code/{confirmation_code}", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Found reservation by code: {data['reservation_id']}")
@@ -206,7 +223,7 @@ def test_reservation(availability_ids):
     print_info("Checking in guest...")
     payload = {"room_number": "301"}
     print_request("POST", f"/api/reservations/{reservation_id}/check-in", payload)
-    response = requests.post(f"{BASE_URL}/api/reservations/{reservation_id}/check-in", json=payload)
+    response = requests.post(f"{BASE_URL}/api/reservations/{reservation_id}/check-in", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Guest checked in. Status: {data['status']}")
@@ -214,21 +231,21 @@ def test_reservation(availability_ids):
     # 2.8 Check Out Guest
     print_info("Checking out guest...")
     print_request("POST", f"/api/reservations/{reservation_id}/check-out")
-    response = requests.post(f"{BASE_URL}/api/reservations/{reservation_id}/check-out")
+    response = requests.post(f"{BASE_URL}/api/reservations/{reservation_id}/check-out", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Guest checked out. Final amount: {data['amount']} {data['currency']}")
 
     # 2.9 Get all reservations
     print_info("Getting all reservations...")
-    response = requests.get(f"{BASE_URL}/api/reservations")
+    response = requests.get(f"{BASE_URL}/api/reservations", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Total reservations: {len(data)}")
 
     # 2.10 Get reservations by guest
     print_info("Getting reservations by guest ID...")
-    response = requests.get(f"{BASE_URL}/api/reservations/guest/{GUEST_ID_1}")
+    response = requests.get(f"{BASE_URL}/api/reservations/guest/{GUEST_ID_1}", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Guest reservations: {len(data)}")
@@ -251,25 +268,25 @@ def test_cancellation(availability_ids):
         "check_out": availability_ids[4],
         "adults": 1,
         "children": 0,
-        "booking_source": "PHONE",
+        "reservation_source": "PHONE",
         "created_by": "TEST_USER"
     }
 
-    response = requests.post(f"{BASE_URL}/api/reservations", json=payload)
+    response = requests.post(f"{BASE_URL}/api/reservations", json=payload, headers=HEADERS)
     data = response.json()
     cancellable_id = data["reservation_id"]
     print_success(f"Reservation created for cancellation: {cancellable_id}")
 
     # Confirm it first
     response = requests.post(f"{BASE_URL}/api/reservations/{cancellable_id}/confirm",
-                            json={"payment_confirmed": True})
+                            json={"payment_confirmed": True}, headers=HEADERS)
     print_success("Reservation confirmed")
 
     # Cancel reservation
     print_info("Cancelling reservation...")
     payload = {"reason": "Guest changed plans"}
     print_request("POST", f"/api/reservations/{cancellable_id}/cancel", payload)
-    response = requests.post(f"{BASE_URL}/api/reservations/{cancellable_id}/cancel", json=payload)
+    response = requests.post(f"{BASE_URL}/api/reservations/{cancellable_id}/cancel", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Reservation cancelled. Refund: {data['amount']} {data['currency']}")
@@ -294,7 +311,7 @@ def test_waitlist(availability_ids):
     }
 
     print_request("POST", "/api/waitlist", payload)
-    response = requests.post(f"{BASE_URL}/api/waitlist", json=payload)
+    response = requests.post(f"{BASE_URL}/api/waitlist", json=payload, headers=HEADERS)
     data = print_response(response)
 
     if response.status_code != 201:
@@ -307,28 +324,28 @@ def test_waitlist(availability_ids):
 
     # 4.2 Get waitlist entry
     print_info("Getting waitlist entry...")
-    response = requests.get(f"{BASE_URL}/api/waitlist/{waitlist_id}")
+    response = requests.get(f"{BASE_URL}/api/waitlist/{waitlist_id}", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Status: {data['status']}, Priority: {data['priority']}")
 
     # 4.3 Get waitlist by guest
     print_info("Getting guest waitlist entries...")
-    response = requests.get(f"{BASE_URL}/api/waitlist/guest/{GUEST_ID_2}")
+    response = requests.get(f"{BASE_URL}/api/waitlist/guest/{GUEST_ID_2}", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Guest has {len(data)} waitlist entries")
 
     # 4.4 Get waitlist by room
     print_info("Getting waitlist entries for room type...")
-    response = requests.get(f"{BASE_URL}/api/waitlist/room/{ROOM_TYPE}")
+    response = requests.get(f"{BASE_URL}/api/waitlist/room/{ROOM_TYPE}", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Room has {len(data)} waitlist entries (sorted by priority)")
 
     # 4.5 Get active waitlist
     print_info("Getting active waitlist entries...")
-    response = requests.get(f"{BASE_URL}/api/waitlist/active")
+    response = requests.get(f"{BASE_URL}/api/waitlist/active", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Total active entries: {len(data)}")
@@ -336,7 +353,7 @@ def test_waitlist(availability_ids):
     # 4.6 Mark as notified
     print_info("Marking waitlist entry as notified...")
     print_request("POST", f"/api/waitlist/{waitlist_id}/notify")
-    response = requests.post(f"{BASE_URL}/api/waitlist/{waitlist_id}/notify")
+    response = requests.post(f"{BASE_URL}/api/waitlist/{waitlist_id}/notify", headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Notified at: {data['notified_at']}")
@@ -345,7 +362,7 @@ def test_waitlist(availability_ids):
     print_info("Upgrading waitlist priority...")
     payload = {"new_priority": "4"}  # URGENT
     print_request("POST", f"/api/waitlist/{waitlist_id}/upgrade-priority", payload)
-    response = requests.post(f"{BASE_URL}/api/waitlist/{waitlist_id}/upgrade-priority", json=payload)
+    response = requests.post(f"{BASE_URL}/api/waitlist/{waitlist_id}/upgrade-priority", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Priority upgraded to: {data['priority']}")
@@ -354,7 +371,7 @@ def test_waitlist(availability_ids):
     print_info("Extending waitlist expiry...")
     payload = {"additional_days": 7}
     print_request("POST", f"/api/waitlist/{waitlist_id}/extend", payload)
-    response = requests.post(f"{BASE_URL}/api/waitlist/{waitlist_id}/extend", json=payload)
+    response = requests.post(f"{BASE_URL}/api/waitlist/{waitlist_id}/extend", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success(f"Expiry extended to: {data['expires_at']}")
@@ -377,7 +394,7 @@ def test_availability_operations(availability_ids):
         "count": 2
     }
     print_request("POST", "/api/availability/reserve", payload)
-    response = requests.post(f"{BASE_URL}/api/availability/reserve", json=payload)
+    response = requests.post(f"{BASE_URL}/api/availability/reserve", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success("Rooms reserved successfully")
@@ -392,7 +409,7 @@ def test_availability_operations(availability_ids):
         "reason": "Maintenance and cleaning"
     }
     print_request("POST", "/api/availability/block", payload)
-    response = requests.post(f"{BASE_URL}/api/availability/block", json=payload)
+    response = requests.post(f"{BASE_URL}/api/availability/block", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success("Rooms blocked successfully")
@@ -406,7 +423,7 @@ def test_availability_operations(availability_ids):
         "count": 1
     }
     print_request("POST", "/api/availability/release", payload)
-    response = requests.post(f"{BASE_URL}/api/availability/release", json=payload)
+    response = requests.post(f"{BASE_URL}/api/availability/release", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success("Rooms released successfully")
@@ -420,7 +437,7 @@ def test_availability_operations(availability_ids):
         "count": 1
     }
     print_request("POST", "/api/availability/unblock", payload)
-    response = requests.post(f"{BASE_URL}/api/availability/unblock", json=payload)
+    response = requests.post(f"{BASE_URL}/api/availability/unblock", json=payload, headers=HEADERS)
     data = print_response(response)
     if response.status_code == 200:
         print_success("Rooms unblocked successfully")
@@ -441,10 +458,10 @@ def test_error_handling():
         "check_out": "2025-11-23",
         "adults": 1,
         "children": 0,
-        "booking_source": "ONLINE"
+        "reservation_source": "ONLINE"
     }
     print_request("POST", "/api/reservations", payload)
-    response = requests.post(f"{BASE_URL}/api/reservations", json=payload)
+    response = requests.post(f"{BASE_URL}/api/reservations", json=payload, headers=HEADERS)
     print_response(response)
     if response.status_code == 400:
         print_success("Invalid date range properly rejected")
@@ -452,7 +469,7 @@ def test_error_handling():
     # Test 2: Non-existent reservation
     print_info("Testing non-existent reservation...")
     fake_id = str(uuid4())
-    response = requests.get(f"{BASE_URL}/api/reservations/{fake_id}")
+    response = requests.get(f"{BASE_URL}/api/reservations/{fake_id}", headers=HEADERS)
     print_response(response)
     if response.status_code == 404:
         print_success("Non-existent reservation properly handled")
@@ -466,10 +483,10 @@ def test_error_handling():
         "check_out": "2025-11-22",
         "adults": 0,
         "children": 1,
-        "booking_source": "ONLINE"
+        "reservation_source": "ONLINE"
     }
     print_request("POST", "/api/reservations", payload)
-    response = requests.post(f"{BASE_URL}/api/reservations", json=payload)
+    response = requests.post(f"{BASE_URL}/api/reservations", json=payload, headers=HEADERS)
     print_response(response)
     if response.status_code == 422:
         print_success("Invalid guest count properly rejected")
@@ -484,6 +501,15 @@ def main():
     print(f"{BOLD}{BLUE}{'*'*80}{RESET}")
 
     try:
+        # Get auth token first
+        global HEADERS
+        HEADERS = get_auth_token()
+        if not HEADERS:
+            print_error("Failed to get authentication token. Exiting.")
+            return
+
+        print_header("STARTING API TESTS")
+
         # Run tests
         availability_ids = test_availability()
         if not availability_ids:

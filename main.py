@@ -1,7 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
 from uuid import UUID
-from datetime import date
+from datetime import date, timedelta
 from typing import List, Optional
+from fastapi.security import OAuth2PasswordRequestForm
 
 from api.schemas import (
     # Reservation
@@ -13,14 +14,20 @@ from api.schemas import (
     ReserveRoomsRequest, BlockRoomsRequest,
     # Waitlist
     CreateWaitlistRequest, WaitlistResponse, ConvertWaitlistRequest,
-    ExtendWaitlistRequest, UpgradePriorityRequest
+    ExtendWaitlistRequest, UpgradePriorityRequest,
+    # Auth
+    Token, UserResponse
 )
+
+from api.dependencies import get_current_active_user, fake_users_db, get_user
+from infrastructure.security import verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from domain.auth import User
 
 from application.services import ReservationService, AvailabilityService, WaitlistService
 from infrastructure.repositories.in_memory_repositories import (
     InMemoryReservationRepository, InMemoryAvailabilityRepository, InMemoryWaitlistRepository
 )
-from domain.enums import BookingSource, Priority, ReservationStatus, RequestType, WaitlistStatus
+from domain.enums import ReservationSource, Priority, ReservationStatus, RequestType, WaitlistStatus
 from domain.value_objects import DateRange, GuestCount
 
 app = FastAPI(
@@ -61,12 +68,12 @@ async def get_reservation_statuses():
         "description": "Reservation status values: PENDING, CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED, NO_SHOW"
     }
 
-@app.get("/api/enums/booking-source", tags=["Enum Reference"])
-async def get_booking_sources():
-    """Get all BookingSource enum values"""
+@app.get("/api/enums/reservation-source", tags=["Enum Reference"])
+async def get_reservation_sources():
+    """Get all ReservationSource enum values"""
     return {
-        "values": [f"{item.name}" for item in BookingSource],
-        "description": "Booking source values: WEBSITE, MOBILE_APP, PHONE, OTA, DIRECT, CORPORATE"
+        "values": [f"{item.name}" for item in ReservationSource],
+        "description": "Reservation source values: WEBSITE, MOBILE_APP, PHONE, OTA, DIRECT, CORPORATE"
     }
 
 @app.get("/api/enums/request-type", tags=["Enum Reference"])
@@ -94,17 +101,41 @@ async def get_priorities():
     }
 
 # ============================================================================
+# AUTH ENDPOINTS
+# ============================================================================
+
+@app.post("/token", response_model=Token, tags=["Auth"])
+async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = get_user(fake_users_db, form_data.username)
+    if not user or not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=401,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=access_token_expires
+    )
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.get("/users/me", response_model=UserResponse, tags=["Auth"])
+async def read_users_me(current_user: User = Depends(get_current_active_user)):
+    return current_user
+
+# ============================================================================
 # RESERVATION ENDPOINTS
 # ============================================================================
 
 @app.post("/api/reservations", response_model=ReservationResponse, status_code=201, tags=["Reservations"])
 async def create_reservation(
     request: CreateReservationRequest,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Create new reservation"""
     try:
-        # booking_source is already BookingSource enum from Pydantic validation
+        # reservation_source is already ReservationSource enum from Pydantic validation
         special_requests = [{"type": req.type.value, "description": req.description} for req in request.special_requests]
 
         reservation = await service.create_reservation(
@@ -114,7 +145,7 @@ async def create_reservation(
             check_out=request.check_out,
             adults=request.adults,
             children=request.children,
-            booking_source=request.booking_source,
+            reservation_source=request.reservation_source,
             special_requests=special_requests,
             created_by=request.created_by
         )
@@ -125,7 +156,8 @@ async def create_reservation(
 
 @app.get("/api/reservations", response_model=List[ReservationResponse], tags=["Reservations"])
 async def get_all_reservations(
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get all reservations"""
     reservations = await service.get_all_reservations()
@@ -134,7 +166,8 @@ async def get_all_reservations(
 @app.get("/api/reservations/{reservation_id}", response_model=ReservationResponse, tags=["Reservations"])
 async def get_reservation(
     reservation_id: UUID,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get reservation by ID"""
     reservation = await service.get_reservation(reservation_id)
@@ -145,7 +178,8 @@ async def get_reservation(
 @app.get("/api/reservations/guest/{guest_id}", response_model=List[ReservationResponse], tags=["Reservations"])
 async def get_guest_reservations(
     guest_id: UUID,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get all reservations for a guest"""
     reservations = await service.get_reservations_by_guest(guest_id)
@@ -154,7 +188,8 @@ async def get_guest_reservations(
 @app.get("/api/reservations/code/{confirmation_code}", response_model=ReservationResponse, tags=["Reservations"])
 async def get_reservation_by_code(
     confirmation_code: str,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get reservation by confirmation code"""
     reservation = await service.get_reservation_by_confirmation_code(confirmation_code)
@@ -166,7 +201,8 @@ async def get_reservation_by_code(
 async def modify_reservation(
     reservation_id: UUID,
     request: ModifyReservationRequest,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Modify reservation details"""
     try:
@@ -188,7 +224,8 @@ async def modify_reservation(
 async def add_special_request(
     reservation_id: UUID,
     request: AddSpecialRequestRequest,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Add special request to reservation"""
     try:
@@ -207,7 +244,8 @@ async def add_special_request(
 async def confirm_reservation(
     reservation_id: UUID,
     request: ConfirmReservationRequest,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Confirm reservation after payment"""
     try:
@@ -225,7 +263,8 @@ async def confirm_reservation(
 async def check_in_guest(
     reservation_id: UUID,
     request: CheckInRequest,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Check in guest"""
     try:
@@ -242,7 +281,8 @@ async def check_in_guest(
 @app.post("/api/reservations/{reservation_id}/check-out", response_model=MoneyResponse, tags=["Reservations"])
 async def check_out_guest(
     reservation_id: UUID,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Check out guest"""
     try:
@@ -257,7 +297,8 @@ async def check_out_guest(
 async def cancel_reservation(
     reservation_id: UUID,
     request: CancelReservationRequest,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Cancel reservation"""
     try:
@@ -274,7 +315,8 @@ async def cancel_reservation(
 @app.post("/api/reservations/{reservation_id}/no-show", response_model=ReservationResponse, tags=["Reservations"])
 async def mark_no_show(
     reservation_id: UUID,
-    service: ReservationService = Depends(get_reservation_service)
+    service: ReservationService = Depends(get_reservation_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Mark guest as no-show"""
     try:
@@ -292,7 +334,8 @@ async def mark_no_show(
 @app.post("/api/availability", response_model=AvailabilityResponse, status_code=201, tags=["Availability"])
 async def create_availability(
     request: CreateAvailabilityRequest,
-    service: AvailabilityService = Depends(get_availability_service)
+    service: AvailabilityService = Depends(get_availability_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Create availability for a room type on a specific date"""
     try:
@@ -310,7 +353,8 @@ async def create_availability(
 async def get_availability(
     room_type_id: str,
     availability_date: date,
-    service: AvailabilityService = Depends(get_availability_service)
+    service: AvailabilityService = Depends(get_availability_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get availability for a specific room type and date"""
     availability = await service.get_availability(room_type_id, availability_date)
@@ -321,7 +365,8 @@ async def get_availability(
 @app.post("/api/availability/check", tags=["Availability"])
 async def check_availability(
     request: CheckAvailabilityRequest,
-    service: AvailabilityService = Depends(get_availability_service)
+    service: AvailabilityService = Depends(get_availability_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Check if rooms are available for a date range"""
     available = await service.check_availability(
@@ -335,7 +380,8 @@ async def check_availability(
 @app.post("/api/availability/reserve", tags=["Availability"])
 async def reserve_rooms(
     request: ReserveRoomsRequest,
-    service: AvailabilityService = Depends(get_availability_service)
+    service: AvailabilityService = Depends(get_availability_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Reserve rooms for a date range"""
     try:
@@ -354,7 +400,8 @@ async def reserve_rooms(
 @app.post("/api/availability/release", tags=["Availability"])
 async def release_rooms(
     request: ReserveRoomsRequest,
-    service: AvailabilityService = Depends(get_availability_service)
+    service: AvailabilityService = Depends(get_availability_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Release rooms for a date range"""
     try:
@@ -373,7 +420,8 @@ async def release_rooms(
 @app.post("/api/availability/block", tags=["Availability"])
 async def block_rooms(
     request: BlockRoomsRequest,
-    service: AvailabilityService = Depends(get_availability_service)
+    service: AvailabilityService = Depends(get_availability_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Block rooms for maintenance/events"""
     try:
@@ -393,7 +441,8 @@ async def block_rooms(
 @app.post("/api/availability/unblock", tags=["Availability"])
 async def unblock_rooms(
     request: ReserveRoomsRequest,
-    service: AvailabilityService = Depends(get_availability_service)
+    service: AvailabilityService = Depends(get_availability_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Unblock rooms after maintenance"""
     try:
@@ -416,7 +465,8 @@ async def unblock_rooms(
 @app.post("/api/waitlist", response_model=WaitlistResponse, status_code=201, tags=["Waitlist"])
 async def add_to_waitlist(
     request: CreateWaitlistRequest,
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Add guest to waitlist"""
     try:
@@ -437,7 +487,8 @@ async def add_to_waitlist(
 
 @app.get("/api/waitlist/active", response_model=List[WaitlistResponse], tags=["Waitlist"])
 async def get_active_waitlist(
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get all active waitlist entries"""
     entries = await service.get_active_waitlist()
@@ -446,7 +497,8 @@ async def get_active_waitlist(
 @app.get("/api/waitlist/guest/{guest_id}", response_model=List[WaitlistResponse], tags=["Waitlist"])
 async def get_guest_waitlist(
     guest_id: UUID,
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get all waitlist entries for a guest"""
     entries = await service.get_guest_waitlist(guest_id)
@@ -455,7 +507,8 @@ async def get_guest_waitlist(
 @app.get("/api/waitlist/room/{room_type_id}", response_model=List[WaitlistResponse], tags=["Waitlist"])
 async def get_room_waitlist(
     room_type_id: str,
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get waitlist entries for a room type (sorted by priority)"""
     entries = await service.get_room_waitlist(room_type_id)
@@ -464,7 +517,8 @@ async def get_room_waitlist(
 @app.get("/api/waitlist/{waitlist_id}", response_model=WaitlistResponse, tags=["Waitlist"])
 async def get_waitlist_entry(
     waitlist_id: UUID,
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get waitlist entry by ID"""
     entry = await service.get_waitlist_entry(waitlist_id)
@@ -476,7 +530,8 @@ async def get_waitlist_entry(
 async def convert_waitlist_to_reservation(
     waitlist_id: UUID,
     request: ConvertWaitlistRequest,
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Convert waitlist entry to reservation"""
     try:
@@ -490,7 +545,8 @@ async def convert_waitlist_to_reservation(
 @app.post("/api/waitlist/{waitlist_id}/expire", response_model=WaitlistResponse, tags=["Waitlist"])
 async def expire_waitlist_entry(
     waitlist_id: UUID,
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Mark waitlist entry as expired"""
     entry = await service.expire_entry(waitlist_id)
@@ -502,7 +558,8 @@ async def expire_waitlist_entry(
 async def extend_waitlist_expiry(
     waitlist_id: UUID,
     request: ExtendWaitlistRequest,
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Extend waitlist entry expiry date"""
     try:
@@ -517,7 +574,8 @@ async def extend_waitlist_expiry(
 async def upgrade_waitlist_priority(
     waitlist_id: UUID,
     request: UpgradePriorityRequest,
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Upgrade waitlist entry priority"""
     try:
@@ -532,7 +590,8 @@ async def upgrade_waitlist_priority(
 @app.post("/api/waitlist/{waitlist_id}/notify", response_model=WaitlistResponse, tags=["Waitlist"])
 async def mark_waitlist_notified(
     waitlist_id: UUID,
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Mark waitlist entry as notified"""
     entry = await service.mark_notified(waitlist_id)
@@ -542,7 +601,8 @@ async def mark_waitlist_notified(
 
 @app.get("/api/waitlist/notify/pending", response_model=List[WaitlistResponse], tags=["Waitlist"])
 async def get_waitlist_entries_to_notify(
-    service: WaitlistService = Depends(get_waitlist_service)
+    service: WaitlistService = Depends(get_waitlist_service),
+    current_user: User = Depends(get_current_active_user)
 ):
     """Get waitlist entries that need notification"""
     entries = await service.get_entries_to_notify()
@@ -566,7 +626,7 @@ def _reservation_to_response(reservation) -> ReservationResponse:
         total_amount=reservation.total_amount.amount,
         currency=reservation.total_amount.currency,
         status=reservation.status.value,
-        booking_source=reservation.booking_source.value,
+        reservation_source=reservation.reservation_source.value,
         special_requests=[
             SpecialRequestResponse(
                 request_id=sr.request_id,

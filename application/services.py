@@ -6,7 +6,7 @@ from typing import List, Optional
 
 from domain.repositories import ReservationRepository, AvailabilityRepository, WaitlistRepository
 from domain.entities import Reservation, Availability, WaitlistEntry
-from domain.enums import BookingSource, RequestType, Priority
+from domain.enums import ReservationSource, RequestType, Priority
 from domain.value_objects import DateRange, GuestCount, Money, CancellationPolicy
 
 
@@ -36,7 +36,7 @@ class ReservationService:
         adults: int,
         children: int,
         special_requests: List[dict],
-        booking_source: BookingSource = BookingSource.WEBSITE,
+        reservation_source: ReservationSource = ReservationSource.WEBSITE,
         created_by: str = "SYSTEM"
     ) -> Reservation:
         """Create new reservation with full validation"""
@@ -66,7 +66,7 @@ class ReservationService:
             guest_count=guest_count,
             total_amount=total_amount,
             cancellation_policy=cancellation_policy,
-            booking_source=booking_source,
+            reservation_source=reservation_source,
             created_by=created_by
         )
 

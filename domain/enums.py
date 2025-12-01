@@ -11,7 +11,7 @@ class ReservationStatus(str, Enum):
     NO_SHOW = "NO_SHOW"
 
 
-class BookingSource(str, Enum):
+class ReservationSource(str, Enum):
     WEBSITE = "WEBSITE"
     MOBILE_APP = "MOBILE_APP"
     PHONE = "PHONE"

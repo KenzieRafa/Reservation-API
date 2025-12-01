@@ -5,7 +5,7 @@ from datetime import datetime, date, timedelta, timezone
 from typing import Optional, List
 from decimal import Decimal
 
-from domain.enums import ReservationStatus, BookingSource, RequestType, WaitlistStatus, Priority
+from domain.enums import ReservationStatus, ReservationSource, RequestType, WaitlistStatus, Priority
 from domain.value_objects import DateRange, GuestCount, Money, CancellationPolicy, SpecialRequest
 
 
@@ -28,7 +28,7 @@ class Reservation(BaseModel):
 
     # Enums/Status
     status: ReservationStatus = ReservationStatus.PENDING
-    booking_source: BookingSource = BookingSource.WEBSITE
+    reservation_source: ReservationSource = ReservationSource.WEBSITE
 
     # Collections (child entities)
     special_requests: List[SpecialRequest] = []
@@ -51,7 +51,7 @@ class Reservation(BaseModel):
         guest_count: GuestCount,
         total_amount: Money,
         cancellation_policy: CancellationPolicy,
-        booking_source: BookingSource,
+        reservation_source: ReservationSource,
         created_by: str = "SYSTEM"
     ) -> "Reservation":
         """Create new reservation with validation"""
@@ -72,7 +72,7 @@ class Reservation(BaseModel):
             guest_count=guest_count,
             total_amount=total_amount,
             cancellation_policy=cancellation_policy,
-            booking_source=booking_source,
+            reservation_source=reservation_source,
             status=ReservationStatus.PENDING,
             created_by=created_by
         )
@@ -349,7 +349,7 @@ class Availability(BaseModel):
         return self.total_rooms - self.reserved_rooms - self.blocked_rooms
 
     @property
-    def is_fully_booked(self) -> bool:
+    def is_fully_reserved(self) -> bool:
         """Check if no rooms available"""
         return self.available_rooms <= 0
 

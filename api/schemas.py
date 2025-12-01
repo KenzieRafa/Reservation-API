@@ -5,7 +5,7 @@ from decimal import Decimal
 from uuid import UUID
 from typing import List, Optional
 
-from domain.enums import BookingSource, RequestType, Priority, ReservationStatus, WaitlistStatus
+from domain.enums import ReservationSource, RequestType, Priority, ReservationStatus, WaitlistStatus
 
 
 # ============================================================================
@@ -26,7 +26,7 @@ class CreateReservationRequest(BaseModel):
     check_out: date
     adults: int = Field(ge=1, le=10)
     children: int = Field(ge=0, le=10, default=0)
-    booking_source: BookingSource = BookingSource.WEBSITE
+    reservation_source: ReservationSource = Field(default=ReservationSource.WEBSITE, description="Source of reservation")
     special_requests: List[SpecialRequestRequest] = []
     created_by: str = "SYSTEM"
 
@@ -84,7 +84,7 @@ class ReservationResponse(BaseModel):
     total_amount: Decimal
     currency: str
     status: str
-    booking_source: str
+    reservation_source: str
     special_requests: List[SpecialRequestResponse]
     created_at: datetime
     modified_at: datetime
@@ -194,3 +194,25 @@ class WaitlistResponse(BaseModel):
     notified_at: Optional[datetime] = None
     converted_reservation_id: Optional[UUID] = None
     priority_score: int
+
+
+# ============================================================================
+# AUTH SCHEMAS
+# ============================================================================
+
+class Token(BaseModel):
+    """Token response DTO"""
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    """Token payload DTO"""
+    username: Optional[str] = None
+
+class UserResponse(BaseModel):
+    """User response DTO"""
+    user_id: UUID
+    username: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    disabled: bool
