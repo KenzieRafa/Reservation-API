@@ -4,7 +4,70 @@
     "description": "Complete API testing for ALL 33 endpoints - Reservation (12), Availability (7), Waitlist (11) + Quick Reference",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
   "item": [
+    {
+      "name": "AUTH (Login First)",
+      "item": [
+        {
+          "name": "Login (Get Token)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.collectionVariables.set('access_token', jsonData.access_token);",
+                  "    console.log('Token updated');",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "username",
+                  "value": "admin",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "admin123",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "http://localhost:8000/token",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "token"
+              ]
+            }
+          }
+        }
+      ]
+    },
     {
       "name": "RESERVATIONS (12 endpoints)",
       "item": [
@@ -27,17 +90,32 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"guest_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"room_type_id\": \"DELUXE_001\",\n  \"check_in\": \"2025-11-20\",\n  \"check_out\": \"2025-11-22\",\n  \"adults\": 2,\n  \"children\": 1,\n  \"booking_source\": \"WEBSITE\",\n  \"special_requests\": [{\"type\": \"EARLY_CHECK_IN\", \"description\": \"Early check-in\"}],\n  \"created_by\": \"TEST_USER\"\n}"
+              "raw": "{\n  \"guest_id\": \"123e4567-e89b-12d3-a456-426614174000\",\n  \"room_type_id\": \"DELUXE_001\",\n  \"check_in\": \"2025-12-10\",\n  \"check_out\": \"2025-12-12\",\n  \"adults\": 2,\n  \"children\": 1,\n  \"reservation_source\": \"WEBSITE\",\n  \"special_requests\": [\n    {\n      \"type\": \"EARLY_CHECK_IN\",\n      \"description\": \"Early check-in\"\n    }\n  ],\n  \"created_by\": \"TEST_USER\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
             },
             "url": {
               "raw": "http://localhost:8000/api/reservations",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations"]
+              "path": [
+                "api",
+                "reservations"
+              ]
             }
           }
         },
@@ -48,9 +126,14 @@
             "url": {
               "raw": "http://localhost:8000/api/reservations",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations"]
+              "path": [
+                "api",
+                "reservations"
+              ]
             }
           }
         },
@@ -61,9 +144,15 @@
             "url": {
               "raw": "http://localhost:8000/api/reservations/{{reservation_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "{{reservation_id}}"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}"
+              ]
             }
           }
         },
@@ -74,9 +163,16 @@
             "url": {
               "raw": "http://localhost:8000/api/reservations/code/{{confirmation_code}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "code", "{{confirmation_code}}"]
+              "path": [
+                "api",
+                "reservations",
+                "code",
+                "{{confirmation_code}}"
+              ]
             }
           }
         },
@@ -87,9 +183,16 @@
             "url": {
               "raw": "http://localhost:8000/api/reservations/guest/123e4567-e89b-12d3-a456-426614174000",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "guest", "123e4567-e89b-12d3-a456-426614174000"]
+              "path": [
+                "api",
+                "reservations",
+                "guest",
+                "123e4567-e89b-12d3-a456-426614174000"
+              ]
             }
           }
         },
@@ -97,14 +200,28 @@
           "name": "6. Modify Reservation",
           "request": {
             "method": "PUT",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"check_out\": \"2025-11-23\"}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"check_out\": \"2025-11-23\"}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/reservations/{{reservation_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "{{reservation_id}}"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}"
+              ]
             }
           }
         },
@@ -112,14 +229,29 @@
           "name": "7. Add Special Request",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"request_type\": \"EXTRA_BED\", \"description\": \"Extra bed\"}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"request_type\": \"EXTRA_BED\", \"description\": \"Extra bed\"}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/reservations/{{reservation_id}}/special-requests",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "{{reservation_id}}", "special-requests"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}",
+                "special-requests"
+              ]
             }
           }
         },
@@ -127,14 +259,29 @@
           "name": "8. Confirm Reservation",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"payment_confirmed\": true}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"payment_confirmed\": true}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/reservations/{{reservation_id}}/confirm",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "{{reservation_id}}", "confirm"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}",
+                "confirm"
+              ]
             }
           }
         },
@@ -142,14 +289,29 @@
           "name": "9. Check-In Guest",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"room_number\": \"301\"}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"room_number\": \"301\"}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/reservations/{{reservation_id}}/check-in",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "{{reservation_id}}", "check-in"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}",
+                "check-in"
+              ]
             }
           }
         },
@@ -160,9 +322,16 @@
             "url": {
               "raw": "http://localhost:8000/api/reservations/{{reservation_id}}/check-out",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "{{reservation_id}}", "check-out"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}",
+                "check-out"
+              ]
             }
           }
         },
@@ -170,14 +339,29 @@
           "name": "11. Cancel Reservation",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"reason\": \"Changed plans\"}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reason\": \"Changed plans\"}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/reservations/{{reservation_id}}/cancel",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "{{reservation_id}}", "cancel"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}",
+                "cancel"
+              ]
             }
           }
         },
@@ -188,9 +372,16 @@
             "url": {
               "raw": "http://localhost:8000/api/reservations/{{reservation_id}}/no-show",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "reservations", "{{reservation_id}}", "no-show"]
+              "path": [
+                "api",
+                "reservations",
+                "{{reservation_id}}",
+                "no-show"
+              ]
             }
           }
         }
@@ -203,14 +394,27 @@
           "name": "1. Create Availability",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"room_type_id\": \"DELUXE_001\", \"availability_date\": \"2025-11-20\", \"total_rooms\": 10, \"overbooking_threshold\": 2}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"room_type_id\": \"DELUXE_001\", \"availability_date\": \"2025-11-20\", \"total_rooms\": 10, \"overbooking_threshold\": 2}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/availability",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "availability"]
+              "path": [
+                "api",
+                "availability"
+              ]
             }
           }
         },
@@ -221,9 +425,16 @@
             "url": {
               "raw": "http://localhost:8000/api/availability/DELUXE_001/2025-11-20",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "availability", "DELUXE_001", "2025-11-20"]
+              "path": [
+                "api",
+                "availability",
+                "DELUXE_001",
+                "2025-11-20"
+              ]
             }
           }
         },
@@ -231,14 +442,28 @@
           "name": "3. Check Availability",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"required_count\": 2}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"required_count\": 2}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/availability/check",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "availability", "check"]
+              "path": [
+                "api",
+                "availability",
+                "check"
+              ]
             }
           }
         },
@@ -246,14 +471,28 @@
           "name": "4. Reserve Rooms",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"count\": 2}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"count\": 2}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/availability/reserve",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "availability", "reserve"]
+              "path": [
+                "api",
+                "availability",
+                "reserve"
+              ]
             }
           }
         },
@@ -261,14 +500,28 @@
           "name": "5. Release Rooms",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"count\": 1}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"count\": 1}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/availability/release",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "availability", "release"]
+              "path": [
+                "api",
+                "availability",
+                "release"
+              ]
             }
           }
         },
@@ -276,14 +529,28 @@
           "name": "6. Block Rooms",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"count\": 1, \"reason\": \"Maintenance\"}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"count\": 1, \"reason\": \"Maintenance\"}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/availability/block",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "availability", "block"]
+              "path": [
+                "api",
+                "availability",
+                "block"
+              ]
             }
           }
         },
@@ -291,14 +558,28 @@
           "name": "7. Unblock Rooms",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"count\": 1}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"room_type_id\": \"DELUXE_001\", \"start_date\": \"2025-11-20\", \"end_date\": \"2025-11-22\", \"count\": 1}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/availability/unblock",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "availability", "unblock"]
+              "path": [
+                "api",
+                "availability",
+                "unblock"
+              ]
             }
           }
         }
@@ -324,14 +605,27 @@
           ],
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"guest_id\": \"223e4567-e89b-12d3-a456-426614174000\", \"room_type_id\": \"DELUXE_001\", \"check_in\": \"2025-11-25\", \"check_out\": \"2025-11-27\", \"adults\": 2, \"children\": 0, \"priority\": \"2\"}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"guest_id\": \"223e4567-e89b-12d3-a456-426614174000\", \"room_type_id\": \"DELUXE_001\", \"check_in\": \"2025-11-25\", \"check_out\": \"2025-11-27\", \"adults\": 2, \"children\": 0, \"priority\": \"2\"}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/waitlist",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist"]
+              "path": [
+                "api",
+                "waitlist"
+              ]
             }
           }
         },
@@ -342,9 +636,15 @@
             "url": {
               "raw": "http://localhost:8000/api/waitlist/active",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "active"]
+              "path": [
+                "api",
+                "waitlist",
+                "active"
+              ]
             }
           }
         },
@@ -355,9 +655,16 @@
             "url": {
               "raw": "http://localhost:8000/api/waitlist/guest/223e4567-e89b-12d3-a456-426614174000",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "guest", "223e4567-e89b-12d3-a456-426614174000"]
+              "path": [
+                "api",
+                "waitlist",
+                "guest",
+                "223e4567-e89b-12d3-a456-426614174000"
+              ]
             }
           }
         },
@@ -368,9 +675,16 @@
             "url": {
               "raw": "http://localhost:8000/api/waitlist/room/DELUXE_001",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "room", "DELUXE_001"]
+              "path": [
+                "api",
+                "waitlist",
+                "room",
+                "DELUXE_001"
+              ]
             }
           }
         },
@@ -381,9 +695,15 @@
             "url": {
               "raw": "http://localhost:8000/api/waitlist/{{waitlist_id}}",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "{{waitlist_id}}"]
+              "path": [
+                "api",
+                "waitlist",
+                "{{waitlist_id}}"
+              ]
             }
           }
         },
@@ -391,14 +711,29 @@
           "name": "6. Convert to Reservation",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"reservation_id\": \"{{reservation_id}}\"}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"reservation_id\": \"{{reservation_id}}\"}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/waitlist/{{waitlist_id}}/convert",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "{{waitlist_id}}", "convert"]
+              "path": [
+                "api",
+                "waitlist",
+                "{{waitlist_id}}",
+                "convert"
+              ]
             }
           }
         },
@@ -409,9 +744,16 @@
             "url": {
               "raw": "http://localhost:8000/api/waitlist/{{waitlist_id}}/notify",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "{{waitlist_id}}", "notify"]
+              "path": [
+                "api",
+                "waitlist",
+                "{{waitlist_id}}",
+                "notify"
+              ]
             }
           }
         },
@@ -419,14 +761,29 @@
           "name": "8. Upgrade Priority",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"new_priority\": \"3\"}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"new_priority\": \"3\"}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/waitlist/{{waitlist_id}}/upgrade-priority",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "{{waitlist_id}}", "upgrade-priority"]
+              "path": [
+                "api",
+                "waitlist",
+                "{{waitlist_id}}",
+                "upgrade-priority"
+              ]
             }
           }
         },
@@ -434,14 +791,29 @@
           "name": "9. Extend Expiry",
           "request": {
             "method": "POST",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"additional_days\": 7}"},
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"additional_days\": 7}"
+            },
             "url": {
               "raw": "http://localhost:8000/api/waitlist/{{waitlist_id}}/extend",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "{{waitlist_id}}", "extend"]
+              "path": [
+                "api",
+                "waitlist",
+                "{{waitlist_id}}",
+                "extend"
+              ]
             }
           }
         },
@@ -452,9 +824,16 @@
             "url": {
               "raw": "http://localhost:8000/api/waitlist/{{waitlist_id}}/expire",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "{{waitlist_id}}", "expire"]
+              "path": [
+                "api",
+                "waitlist",
+                "{{waitlist_id}}",
+                "expire"
+              ]
             }
           }
         },
@@ -465,9 +844,16 @@
             "url": {
               "raw": "http://localhost:8000/api/waitlist/notify/pending",
               "protocol": "http",
-              "host": ["localhost"],
+              "host": [
+                "localhost"
+              ],
               "port": "8000",
-              "path": ["api", "waitlist", "notify", "pending"]
+              "path": [
+                "api",
+                "waitlist",
+                "notify",
+                "pending"
+              ]
             }
           }
         }
@@ -480,43 +866,115 @@
           "name": "Priority (Waitlist): 1=LOW, 2=MEDIUM, 3=HIGH, 4=URGENT",
           "request": {
             "method": "GET",
-            "url": {"raw": "http://localhost:8000/api/health", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "health"]}
+            "url": {
+              "raw": "http://localhost:8000/api/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "health"
+              ]
+            }
           }
         },
         {
           "name": "RequestType: EARLY_CHECK_IN, LATE_CHECK_OUT, HIGH_FLOOR, ACCESSIBLE_ROOM, QUIET_ROOM, CRIBS, EXTRA_BED, SPECIAL_AMENITIES",
           "request": {
             "method": "GET",
-            "url": {"raw": "http://localhost:8000/api/health", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "health"]}
+            "url": {
+              "raw": "http://localhost:8000/api/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "health"
+              ]
+            }
           }
         },
         {
           "name": "BookingSource: WEBSITE, MOBILE_APP, PHONE, OTA, DIRECT, CORPORATE",
           "request": {
             "method": "GET",
-            "url": {"raw": "http://localhost:8000/api/health", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "health"]}
+            "url": {
+              "raw": "http://localhost:8000/api/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "health"
+              ]
+            }
           }
         },
         {
           "name": "ReservationStatus: PENDING, CONFIRMED, CHECKED_IN, CHECKED_OUT, CANCELLED, NO_SHOW",
           "request": {
             "method": "GET",
-            "url": {"raw": "http://localhost:8000/api/health", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "health"]}
+            "url": {
+              "raw": "http://localhost:8000/api/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "health"
+              ]
+            }
           }
         },
         {
           "name": "WaitlistStatus: ACTIVE, CONVERTED, EXPIRED, CANCELLED",
           "request": {
             "method": "GET",
-            "url": {"raw": "http://localhost:8000/api/health", "protocol": "http", "host": ["localhost"], "port": "8000", "path": ["api", "health"]}
+            "url": {
+              "raw": "http://localhost:8000/api/health",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8000",
+              "path": [
+                "api",
+                "health"
+              ]
+            }
           }
         }
       ]
     }
   ],
   "variable": [
-    {"key": "reservation_id", "value": "", "type": "string"},
-    {"key": "waitlist_id", "value": "", "type": "string"},
-    {"key": "confirmation_code", "value": "", "type": "string"}
+    {
+      "key": "reservation_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "waitlist_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "confirmation_code",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    }
   ]
 }
