@@ -981,16 +981,3 @@ Before submitting, verify:
 
 ---
 
-## 👨‍💻 Author
-Domain-Driven Design Implementation for Hotel Reservation System
-Created with ❤️ using FastAPI + Pydantic
-
----
-
-## 📄 License
-This project is for educational purposes.
-
----
-
-**Last Updated**: November 17, 2025
-**Version**: 1.0.0 Complete
